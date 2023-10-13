@@ -54,6 +54,19 @@ class Command(BaseCommand):
         except Exception as e:
             self.stderr.write(f"sql exec error! sql:{sql}, err: {e}")
 
+    def get_comment(self, field, db_column: str):
+        comment = ""
+        verbose_name = field.verbose_name
+        if not verbose_name or verbose_name == db_column.replace("_", " "):
+            return comment
+        comment = verbose_name
+        help_text = field.help_text
+        if help_text:
+            comment += "," + help_text
+        if field.choices:
+            comment += "枚举:" + ",".join((f"{k}:{v}"for k,v in field.choices))
+        return comment
+
     def mysql_add_comment(self, cursor, connection, custom_models):
         """
         if MySQL
@@ -95,13 +108,13 @@ class Command(BaseCommand):
                     continue
                 # 3.1 get verbose_name as comment
                 db_column = field.db_column or field.name
-                verbose_name = field.verbose_name
-                if not verbose_name or verbose_name == db_column.replace("_", " "):
+                comment = self.get_comment(field, db_column)
+                if not comment:
                     continue
                 original_ddl = ddl_column_dict.get(db_column)
                 if not original_ddl:
                     continue
-                model_comment_sql = f"-- FOR {table_name}.{db_column} \n\tALTER TABLE {table_name} MODIFY COLUMN {original_ddl} COMMENT '{verbose_name}'"
+                model_comment_sql = f"-- FOR {table_name}.{db_column} \n\tALTER TABLE {table_name} MODIFY COLUMN {original_ddl} COMMENT '{comment}'"
                 self.exec(cursor, connection, model_comment_sql)
         connection.close()
 
@@ -129,8 +142,8 @@ class Command(BaseCommand):
                     continue
                 # 3. get verbose_name as comment
                 db_column = field.db_column or field.name
-                comment = field.verbose_name
-                if not comment or comment == db_column.replace("_", " "):
+                comment = self.get_comment(field, db_column)
+                if not comment:
                     continue
                 # 4. start to execute sql for comment
                 sql = f"""COMMENT ON COLUMN "{table_name}"."{db_column}" IS '{comment}'"""
