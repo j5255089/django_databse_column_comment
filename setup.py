@@ -5,13 +5,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="addcomments",
-    version="0.0.3",
-    author="yangliu",
-    author_email="codeliuyang@163.com",
+    version="1.1.0",
+    author="jk",
+    author_email="wan525589@qq.com",
     description="add database table column comments",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/codeliuyang/django_mysql_comment",
+    url="https://github.com/j5255089/django_databse_column_comment",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -64,7 +64,7 @@ class Command(BaseCommand):
         if help_text:
             comment += "," + help_text
         if field.choices:
-            comment += "枚举:" + ",".join((f"{k}:{v}"for k,v in field.choices))
+            comment += " 枚举:" + ",".join((f"{k}:{v}"for k, v in field.choices))
         return comment
 
     def mysql_add_comment(self, cursor, connection, custom_models):

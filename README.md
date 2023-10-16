@@ -31,7 +31,7 @@ INSTALLED_APPS += [
 
 next, type command
 ```
-python manage.py addcolumncomments
+python manage.py addcomments
 ```
 
 finally, the info will be printed, all the models created will be processed
