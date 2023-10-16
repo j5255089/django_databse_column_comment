@@ -20,8 +20,14 @@ class Command(BaseCommand):
             default=DEFAULT_DB_ALIAS,
             help='Nominates a database to synchronize. Defaults to the "default" database.',
         )
-
+        parser.add_argument(
+            '--comment',
+            default="verbose_name,help_text,choices",
+            help='Nominates a attr to comment. verbose_name,help_text,choices Defaults to the "verbose_name,help_text,choices".',
+        )
+ 
     def handle(self, *args, **options):
+        self._comment = options['comment']
         # 1. connect to database
         connection = self.get_db_connection(options)
         cursor = connection.cursor()
@@ -57,13 +63,12 @@ class Command(BaseCommand):
     def get_comment(self, field, db_column: str):
         comment = ""
         verbose_name = field.verbose_name
-        if not verbose_name or verbose_name == db_column.replace("_", " "):
-            return comment
-        comment = verbose_name
+        if "verbose_name" in self._comment and verbose_name and verbose_name != db_column.replace("_", " "):
+            comment += verbose_name
         help_text = field.help_text
-        if help_text:
+        if "help_text" in self._comment and help_text:
             comment += "," + help_text
-        if field.choices:
+        if "choices" in self._comment and field.choices:
             comment += " 枚举:" + ",".join((f"{k}:{v}"for k, v in field.choices))
         return comment
 
