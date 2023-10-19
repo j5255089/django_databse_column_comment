@@ -20,7 +20,9 @@ INSTALLED_APPS += [
 ```
 python manage.py er -o er.html auth
 ```
-`auth` is a app label
+> `auth` is a app label
+
+then open er.html with web browser
 
 ## add comment to database
 
