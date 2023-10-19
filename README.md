@@ -1,32 +1,40 @@
-# django_database_colum_comment
+# django_er
+1. generate ER by django modules use mermaid
+2. auto add comment for columns of MySQL or PostgreSQL.the property `verbose_name`,`help_text`,`choices` of the django model will be used as ```comment``` for columns
 
-auto add comment for columns of MySQL or PostgreSQL
 
-the property ```verbose_name``` of the django model will be used as ```comment``` for columns
+## pre use
+1. install the package
+```
+pip install django_er
+```
 
-## Database Supported
+2. in `settings.py` add app
+```
+INSTALLED_APPS += [
+    'django_er',
+]
+```
+
+## generate ER
+```
+python manage.py er -o er.html auth
+```
+`auth` is a app label
+
+## add comment to database
+
+### Database Supported
 
 - MySQL
 - PostgreSQL
 
-## How to use
+### How to use
 
-the model 
+the model
 ```
 name = models.CharField(max_length=200, verbose_name="名称", blank=True, default=None)
 age = models.SmallIntegerField(verbose_name="年龄", blank=True, default=None)
-```
-
-then, install the package
-```
-pip install addcomments
-```
-
-in ```settings.py``` add app
-```
-INSTALLED_APPS += [
-    'addcomments',
-]
 ```
 
 next, type command

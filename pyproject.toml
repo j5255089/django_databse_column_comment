@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "django_er"
+version = "0.1.0"
+description = "添加备注到数据库表;生成er图"
+authors = ["wojiushiwo_x <wan525589@qq.com>"]
+readme = "README.md"
+license = "MIT"
+[tool.poetry.dependencies]
+python = ">=3.6"
+Django = "*"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -5,35 +5,35 @@ only support MySQL and PostgreSQL for now
 commands 'python manage.py addcolumncomments'
 
 """
-from django.core.management.base import BaseCommand
-from django.db import DEFAULT_DB_ALIAS, connections
 from django.apps import apps
+from django.core.management.base import BaseCommand
+from django.db import DEFAULT_DB_ALIAS, connections, models
 
 
 class Command(BaseCommand):
-    help = 'alter table columns to add comment with the verbose_name of model'
+    help = "alter table columns to add comment with the verbose_name of model"
 
     def add_arguments(self, parser):
         # 增加数据库配置
         parser.add_argument(
-            '--database',
+            "--database",
             default=DEFAULT_DB_ALIAS,
             help='Nominates a database to synchronize. Defaults to the "default" database.',
         )
         parser.add_argument(
-            '--comment',
+            "--comment",
             default="verbose_name,help_text,choices",
             help='Nominates a attr to comment. verbose_name,help_text,choices Defaults to the "verbose_name,help_text,choices".',
         )
- 
+
     def handle(self, *args, **options):
-        self._comment = options['comment']
+        self._comment = options["comment"]
         # 1. connect to database
         connection = self.get_db_connection(options)
         cursor = connection.cursor()
         # 2. find all the models defined by ourselves
         models = apps.get_models()
-        custom_models = [model for model in models if 'django.contrib' not in str(model)]
+        custom_models = [model for model in models if "django.contrib" not in str(model)]
         # 3. know the database type
         connection_type_info = str(connection)
         processed = False
@@ -47,7 +47,7 @@ class Command(BaseCommand):
             self.stdout.write(f"no related type for {connection_type_info}")
 
     def get_db_connection(self, options):
-        database = options['database']
+        database = options["database"]
         connection = connections[database]
         connection.prepare_database()
         return connection
@@ -69,7 +69,7 @@ class Command(BaseCommand):
         if "help_text" in self._comment and help_text:
             comment += "," + help_text
         if "choices" in self._comment and field.choices:
-            comment += " 枚举:" + ",".join((f"{k}:{v}"for k, v in field.choices))
+            comment += " 枚举:" + ",".join((f"{k}:{v}" for k, v in field.choices))
         return comment
 
     def mysql_add_comment(self, cursor, connection, custom_models):
@@ -97,22 +97,22 @@ class Command(BaseCommand):
             for ddl_text in ddl_texts:
                 ddl_text = ddl_text.strip()
                 # 找到属于字段的行
-                if ddl_text[0] == '`':
+                if ddl_text[0] == "`":
                     next_index = ddl_text.index("`", 1, len(ddl_text))
-                    column_key = ddl_text[1: next_index]
-                    if column_key == 'id':
+                    column_key = ddl_text[1:next_index]
+                    if column_key == "id":
                         continue
                         # 移除comment
                     comment_index = ddl_text.find("COMMENT")
                     ddl_column_dict[column_key] = ddl_text[0:comment_index]
             # 3. 遍历model的字段
-            fields = modelobj._meta.fields
+            fields: list[models.Field] = modelobj._meta.fields
             for field in fields:
                 field_type = str(type(field))
                 if "AutoField" in field_type or "Foreign" in field_type:
                     continue
                 # 3.1 get verbose_name as comment
-                db_column = field.db_column or field.name
+                db_column = field.column
                 comment = self.get_comment(field, db_column)
                 if not comment:
                     continue
@@ -153,5 +153,5 @@ class Command(BaseCommand):
                 # 4. start to execute sql for comment
                 sql = f"""COMMENT ON COLUMN "{table_name}"."{db_column}" IS '{comment}'"""
                 self.exec(cursor, connection, sql)
-                
+
         connection.close()
