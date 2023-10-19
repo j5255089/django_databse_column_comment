@@ -1,3 +1,5 @@
+import os
+import platform
 import sys
 import uuid
 from typing import Optional
@@ -121,5 +123,16 @@ class Command(BaseCommand):
         if output:
             with open(output, "wt") as f:
                 f.write(string)
+            self.open_with_browser(output)
         else:
             self.stdout.write(string)
+
+    @staticmethod
+    def open_with_browser(filepath: str):
+        os_name = platform.system()
+        if os_name == "Linux":
+            os.system(f"xdg-open {filepath}")
+        elif os_name == "Windows":
+            os.system(f"start {filepath}")
+        elif os_name == "Darwin":
+            os.system(f"open {filepath}")
