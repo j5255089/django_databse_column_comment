@@ -6,7 +6,7 @@
 ## pre use
 1. install the package
 ```
-pip install django_er
+pip install git+https://github.com/j5255089/django_er.git
 ```
 
 2. in `settings.py` add app
