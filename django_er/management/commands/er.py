@@ -30,20 +30,15 @@ class Mermaid:
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body>
-    <div class="mermaid-{self._uid}"></div>
+    <pre class="mermaid">
+      {self._diagram}
+    </pre>
     <script type="module">
-        const graphDefinition = \'_diagram\';
-        const elementClassName = "mermaid-{self._uid}"
-        const element = document.querySelector('.' + elementClassName);
-        const {{svg}} = await mermaid.render(elementClassName, graphDefinition);
-        element.innerHTML = svg;
-        element.firstChild.style.width = element.firstChild.style.maxWidth;
-        element.firstChild.style.maxWidth = "none";
+        mermaid.initialize( {{ theme: 'default', er: {{useMaxWidth: false, layoutDirection: "LR"}} }} );
     </script>
 </body>
 </html>
 """
-        ret = ret.replace("_diagram", self._diagram)
         return ret
 
 
@@ -114,8 +109,11 @@ class Command(BaseCommand):
                 er += "}"
         er += relation_er
         if len(er) > 50000:
-            self.stderr.write("er is to large, plseae select apps to generate")
+            self.stderr.write("ER is to large, plseae select apps to generate")
             sys.exit(2)
+        if er == "erDiagram":
+            self.stdout.write("There are no modules, please create module first.")
+            sys.exit(0)
         html = Mermaid(er).html()
         return html
 
