@@ -5,12 +5,8 @@ import uuid
 from typing import Optional
 
 from django.apps import apps
-from django.core.management.base import (
-    BaseCommand,
-    no_translations,
-)
+from django.core.management.base import BaseCommand
 from django.db import models
-from django.utils.translation import activate
 
 
 class Mermaid:
@@ -51,7 +47,6 @@ class Command(BaseCommand):
         parser.add_argument("args", metavar="app_label", nargs="*", help="Specify the app label(s) to create er for.")
         parser.add_argument("-o", "--output", help="Specifies file to which the output is written.")
 
-    @no_translations
     def handle(self, *app_labels, **options):
         # Make sure the app they asked for exists
         app_labels = set(app_labels)
@@ -74,7 +69,6 @@ class Command(BaseCommand):
         # https://mermaid.js.org/syntax/entityRelationshipDiagram.html
         er = "erDiagram"
         relation_er = ""
-        activate("zh-hans")
         for app_label in check_labels:
             for model in apps.get_app_config(app_label).get_models():
                 # 表信息生成
