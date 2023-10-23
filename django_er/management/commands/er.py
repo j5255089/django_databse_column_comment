@@ -7,6 +7,7 @@ from typing import Optional
 from django.apps import apps
 from django.core.management.base import BaseCommand
 from django.db import models
+from django.db.models.fields.related import RelatedField
 
 
 class Mermaid:
@@ -69,40 +70,27 @@ class Command(BaseCommand):
         # https://mermaid.js.org/syntax/entityRelationshipDiagram.html
         er = "erDiagram"
         relation_er = ""
-        for app_label in check_labels:
-            for model in apps.get_app_config(app_label).get_models():
-                # 表信息生成
-                table_name = model._meta.db_table
-                table_comment = model._meta.verbose_name
-                er += f' {table_name}["{table_name}({table_comment})"] {{'
-                fields: list[models.Field] = model._meta.fields
+        tables = {
+            model._meta.db_table: model
+            for app_label in check_labels
+            for model in apps.get_app_config(app_label).get_models()
+        }
 
-                for f in fields:
-                    # 字段描述生成
-                    choices = ",".join((f"{k}:{v}" for k, v in f.choices or []))
-                    type_ = f.get_internal_type()
-                    if f.max_length:
-                        type_ += f"({f.max_length})"
-                    comment = f"{f.verbose_name} {f.help_text} {choices}".strip().replace('"', r"\'")
-                    field_item = f'{type_} {f.column} "{comment}"'
-                    item_length = 120
-                    if len(field_item) > item_length:
-                        field_item = field_item[: item_length - 4] + '.."'
-                    er += " " + field_item
-                    # 关系生成
-                    if isinstance(f, (models.ForeignKey, models.OneToOneField, models.ManyToManyField)):
-                        rhs_field: models.Field = f.foreign_related_fields[0]
-                        rhs_table_name = rhs_field.model._meta.db_table
-                        if f.many_to_one:
-                            relation = " }o--|| "
-                        elif f.one_to_one:
-                            relation = " ||--|| "
-                        elif f.many_to_many:
-                            relation = " }o--o{ "
-                        elif f.one_to_many:
-                            relation = " ||--o{ "
-                        relation_er += " " + table_name + relation + rhs_table_name + f":{f.column}"
-                er += "}"
+        for table_name, model in tables.items():
+            # 表信息生成
+            table_name = model._meta.db_table
+            table_comment = model._meta.verbose_name
+            er += f' {table_name}["{table_name}({table_comment})"] {{'
+            fields: list[models.Field] = list(model._meta.fields)
+
+            for f in fields:
+                er += " " + self._generate_field_item(f)
+                relation = self._table_related_field(f, table_name)
+                if relation:
+                    relation_er += " " + relation
+            relation_er += self._m2m_related_field(model)
+            relation_er += self._related_objects(model, tables)
+            er += "}"
         er += relation_er
         if len(er) > 50000:
             self.stderr.write("ER is to large, plseae select apps to generate")
@@ -112,6 +100,74 @@ class Command(BaseCommand):
             sys.exit(0)
         html = Mermaid(er).html()
         return html
+
+    @staticmethod
+    def _generate_field_item(f: models.Field) -> str:
+        """字段描述生成"""
+        choices = ",".join((f"{k}:{v}" for k, v in f.choices or []))
+        type_ = f.get_internal_type()
+        if f.max_length:
+            type_ += f"({f.max_length})"
+        comment = f"{f.verbose_name} {f.help_text} {choices}".strip().replace('"', r"\'")
+        field_item = f'{type_} {f.column} "{comment}"'
+        item_length = 120
+        if len(field_item) > item_length:
+            field_item = field_item[: item_length - 4] + '.."'
+        return field_item
+
+    @staticmethod
+    def _table_related_field(f: models.Field, table_name: str) -> str:
+        """引用字段关系生成"""
+        if not isinstance(f, RelatedField):
+            return ""
+        rhs_field: models.Field = f.target_field
+        rhs_table_name = rhs_field.model._meta.db_table
+        if f.many_to_one:
+            relation = " }o--|| "
+        elif f.one_to_one:
+            relation = " ||--|| "
+        elif f.many_to_many:
+            relation = " }o--o{ "
+        elif f.one_to_many:
+            relation = " ||--o{ "
+        return table_name + relation + rhs_table_name + f":{f.column}"
+
+    @staticmethod
+    def _m2m_related_field(model: models.Model) -> str:
+        """多对多关系生成"""
+        relation_er = ""
+        table_name = model._meta.db_table
+        for f in model._meta.local_many_to_many:
+            rhs_field: models.Field = f.target_field
+            rhs_table_name = rhs_field.model._meta.db_table
+            relation = " }o--o{ "
+            relation_er += " " + table_name + relation + rhs_table_name + f":{f.m2m_db_table()}"
+        return relation_er
+
+    @staticmethod
+    def _related_objects(model: models.Model, table_names: dict) -> str:
+        """引用该表关系生成"""
+        table_name = model._meta.db_table
+        relation_er = ""
+        for f in model._meta.related_objects:
+            f: models.ForeignObjectRel
+            rhs_field: models.Field = f.field
+            rhs_table_name = rhs_field.model._meta.db_table
+            if rhs_table_name in table_names:  # 关系已在对方表生成不重复生成
+                continue
+            if f.many_to_one:
+                relation = " }o--|| "
+            elif f.one_to_one:
+                relation = " ||--|| "
+            elif f.many_to_many:
+                relation = " }o--o{ "
+            elif f.one_to_many:
+                relation = " ||--o{ "
+            if f.many_to_many:
+                relation_er += " " + table_name + relation + rhs_table_name + f":{rhs_field.m2m_db_table()}"
+            else:
+                relation_er += " " + table_name + relation + rhs_table_name + f":{rhs_field.column}"
+        return relation_er
 
     def _out(self, output: Optional[str], string: str):
         if output:
