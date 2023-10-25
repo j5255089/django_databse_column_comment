@@ -26,7 +26,7 @@ class Mermaid:
 <!DOCTYPE html>
 <head>
     <title>ER图</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://unpkg.com/mermaid@10.5.1/dist/mermaid.min.js"></script>
 </head>
 <body>
     <pre class="mermaid">
