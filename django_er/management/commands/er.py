@@ -9,6 +9,8 @@ from django.core.management.base import BaseCommand
 from django.db import models
 from django.db.models.fields.related import RelatedField
 
+from django_er.management import er_js
+
 
 class Mermaid:
     def __init__(self, diagram: str):
@@ -24,14 +26,12 @@ class Mermaid:
     def html(self) -> str:
         ret = f"""
 <!DOCTYPE html>
-<head>
-    <title>ER图</title>
-    <script src="https://unpkg.com/mermaid@10.5.1/dist/mermaid.min.js"></script>
-</head>
+<head><title>ER图</title></head>
 <body>
     <pre class="mermaid">
       {self._diagram}
     </pre>
+    {er_js.er_script()}
     <script type="module">
         mermaid.initialize( {{ theme: 'default', er: {{useMaxWidth: false, layoutDirection: "LR"}} }} );
     </script>
