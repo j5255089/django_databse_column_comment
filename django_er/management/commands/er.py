@@ -1,6 +1,8 @@
 import os
 import platform
 import sys
+import tempfile
+import time
 import uuid
 from typing import Optional
 
@@ -175,7 +177,11 @@ class Command(BaseCommand):
                 f.write(string)
             self.open_with_browser(output)
         else:
-            self.stdout.write(string)
+            with tempfile.NamedTemporaryFile("w", prefix="django_er") as t:
+                t.write(string)
+                t.flush()
+                self.open_with_browser(t.name)
+                time.sleep(2)
 
     @staticmethod
     def open_with_browser(filepath: str):
